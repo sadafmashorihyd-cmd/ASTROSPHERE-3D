@@ -5,7 +5,28 @@ import { OrbitControls, Stars, PerspectiveCamera } from '@react-three/drei';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as THREE from 'three';
 
-
+// --- Background Particles Component ---
+const BackgroundParticles = () => {
+  const points = useRef();
+  useFrame((state) => {
+    if (points.current) {
+      points.current.rotation.y = state.clock.getElapsedTime() * 0.05;
+    }
+  });
+  return (
+    <points ref={points}>
+      <bufferGeometry>
+        <bufferAttribute 
+          attach="attributes-position" 
+          count={1500} 
+          array={new Float32Array(4500).map(() => (Math.random() - 0.5) * 30)} 
+          itemSize={3} 
+        />
+      </bufferGeometry>
+      <pointsMaterial size={0.03} color="cyan" transparent opacity={0.4} />
+    </points>
+  );
+};
 // --- 1. GLOBAL RESPONSIVE STYLES ---
 const glowHeader = { 
   textShadow: '0 0 20px rgba(0, 255, 255, 0.6)', 
@@ -101,36 +122,7 @@ const Home = ({ setSelected }) => {
   );
 };
 
-// --- 3. UPDATED COMMUNITY & FORUM (Using sectionPadding) ---
-const Community = () => (
-  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={sectionPadding}>
-    <h1 style={glowHeader}>RESEARCH <span style={{ color: 'cyan' }}>NETWORK</span></h1>
-    {/* Grid setup for responsiveness */}
-    <div style={{ 
-      display: 'grid', 
-      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
-      gap: '40px', 
-      width: '100%', 
-      maxWidth: '1200px' 
-    }}>
-      {['DR. ALISHBA', 'PROF. RAZA'].map((name, i) => (
-        <motion.div 
-          key={i} 
-          whileHover={{ y: -10, borderColor: 'cyan' }}
-          style={{ 
-            background: 'rgba(255,255,255,0.02)', padding: '50px 30px', 
-            borderRadius: '40px', border: '1px solid rgba(255,255,255,0.1)', 
-            textAlign: 'center', backdropFilter: 'blur(20px)' 
-          }}
-        >
-          <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: 'cyan', margin: '0 auto 25px', boxShadow: '0 0 20px cyan' }} />
-          <h3 style={{ letterSpacing: '2px' }}>{name}</h3>
-          <button style={{ marginTop: '30px', width: '100%', padding: '12px', borderRadius: '15px', border: '1px solid cyan', color: 'cyan', cursor: 'pointer', fontWeight: 'bold' }}>VIEW PROFILE</button>
-        </motion.div>
-      ))}
-    </div>
-  </motion.div>
-);
+
 // --- 4. Community & Forum Pages (Keeping Spacing Consistent) ---
 const Community = () => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ paddingTop: '220px', paddingLeft: '8%', paddingRight: '8%', color: 'white' }}>
