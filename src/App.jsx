@@ -5,92 +5,132 @@ import { OrbitControls, Stars, PerspectiveCamera } from '@react-three/drei';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as THREE from 'three';
 
-// --- 1. Background Floating Particles ---
-const BackgroundParticles = () => {
-  const points = useRef();
-  useFrame((state) => {
-    points.current.rotation.y = state.clock.getElapsedTime() * 0.05;
-  });
+
+// --- 1. GLOBAL RESPONSIVE STYLES ---
+const glowHeader = { 
+  textShadow: '0 0 20px rgba(0, 255, 255, 0.6)', 
+  // Mobile par 28px, Tablet par medium, aur Desktop par 60px tak jaye ga
+  fontSize: 'clamp(28px, 8vw, 60px)', 
+  letterSpacing: 'clamp(2px, 1.5vw, 15px)', 
+  lineHeight: '1.2', 
+  textAlign: 'center',
+  marginBottom: 'clamp(30px, 8vh, 100px)',
+  width: '100%',
+  fontWeight: '900',
+  textTransform: 'uppercase'
+};
+
+const sectionPadding = { 
+  // Navbar se door rakhne ke liye dynamic padding
+  paddingTop: 'clamp(140px, 20vh, 220px)', 
+  paddingBottom: '80px',
+  paddingLeft: '5%',
+  paddingRight: '5%',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  minHeight: '100vh',
+  width: '100%'
+};
+
+// --- 2. HOME COMPONENT (Multi-Device Support) ---
+const Home = ({ setSelected }) => {
+  // Screen size check karne ke liye state (taake resize par design na tootay)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   return (
-    <points ref={points}>
-      <bufferGeometry>
-        <bufferAttribute 
-          attach="attributes-position" 
-          count={1500} 
-          array={new Float32Array(4500).map(() => (Math.random() - 0.5) * 30)} 
-          itemSize={3} 
-        />
-      </bufferGeometry>
-      <pointsMaterial size={0.03} color="cyan" transparent opacity={0.4} />
-    </points>
+    <div style={{ 
+      height: '100vh', 
+      display: 'flex', 
+      // Mobile par Column, Desktop par Row
+      flexDirection: isMobile ? 'column' : 'row', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      textAlign: 'center',
+      position: 'relative', 
+      overflow: 'hidden',
+      padding: '0 5%'
+    }}>
+      {/* Text Container */}
+      <div style={{ 
+        zIndex: 10, 
+        maxWidth: isMobile ? '100%' : '550px', 
+        pointerEvents: 'none',
+        marginTop: isMobile ? '80px' : '0',
+        flexShrink: 0
+      }}>
+        <motion.h1 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{ ...glowHeader, lineHeight: '1.1' }}
+        >
+          GLOBAL <br/>
+          <span style={{ color: 'cyan', textShadow: '0 0 30px cyan' }}>SCIENCE</span>
+        </motion.h1>
+        <p style={{ opacity: 0.5, marginTop: '20px', fontSize: 'clamp(14px, 2vw, 18px)', letterSpacing: '1px' }}>
+          Decoding the Human Mind and Biological Immortality.
+        </p>
+      </div>
+
+      {/* 3D Globe Container */}
+      <div style={{ 
+        position: isMobile ? 'relative' : 'absolute', 
+        right: isMobile ? '0' : '0', 
+        width: isMobile ? '100%' : '75%', 
+        height: isMobile ? '45vh' : '100%',
+        zIndex: 1
+      }}>
+        <Canvas>
+          {/* Camera position adjusts for mobile vs desktop */}
+          <PerspectiveCamera makeDefault position={[0, 0, isMobile ? 12 : 9]} />
+          <Stars count={3000} factor={4} fade />
+          <ambientLight intensity={1.5} />
+          <Suspense fallback={null}>
+            <GlobeScene setSelected={setSelected} />
+          </Suspense>
+          <OrbitControls enableZoom={false} enablePan={false} />
+        </Canvas>
+      </div>
+    </div>
   );
 };
 
-// --- 2. Interactive Globe Component (Shifted Right) ---
-const GlobeScene = ({ setSelected }) => {
-  const earthRef = useRef();
-  const [colorMap] = useLoader(THREE.TextureLoader, ['earth_color.jpg']);
-
-  useFrame((state, delta) => {
-    if (earthRef.current) earthRef.current.rotation.y += delta * 0.1;
-  });
-
-  const markers = [
-    { id: 1, pos: [1.8, 0.5, 1], label: "Project S.Q.U.", info: "Standardized Units of Suffering." },
-    { id: 2, pos: [-1.2, 1.2, 1.2], label: "Consciousness", info: "Mind-Brain Interface Research." }
-  ];
-
-  return (
-    <>
-      <ambientLight intensity={1.5} />
-      <pointLight position={[10, 10, 10]} intensity={2} />
-      {/* Globe position shifted to the right in the 3D space */}
-      <group ref={earthRef} position={[1.5, 0, 0]}> 
-        <mesh>
-          <sphereGeometry args={[2.5, 64, 64]} />
-          <meshStandardMaterial map={colorMap} metalness={0.4} roughness={0.7} />
-        </mesh>
-        {markers.map((m) => (
-          <mesh key={m.id} position={m.pos} onClick={() => setSelected(m)}>
-            <sphereGeometry args={[0.09, 16, 16]} />
-            <meshBasicMaterial color="cyan" />
-          </mesh>
-        ))}
-      </group>
-    </>
-  );
-};
-
-// --- 3. Home Component (Layout Fix) ---
-const Home = ({ setSelected }) => (
-  <div style={{ height: '100vh', display: 'flex', alignItems: 'center', paddingLeft: '6%', position: 'relative', overflow: 'hidden' }}>
-    {/* Left Side Content - Pushed slightly more to the left */}
-    <div style={{ zIndex: 10, maxWidth: '550px', pointerEvents: 'none' }}>
-      <motion.h1 
-        initial={{ opacity: 0, x: -80 }} animate={{ opacity: 1, x: 0 }}
-        style={{ fontSize: 'clamp(40px, 8vw, 80px)', fontWeight: '900', letterSpacing: '8px', lineHeight: '1', textShadow: '0 0 25px rgba(0,255,255,0.7)' }}
-      >
-        GLOBAL <br/><span style={{ color: 'cyan' }}>SCIENCE</span>
-      </motion.h1>
-      <p style={{ opacity: 0.6, marginTop: '30px', fontSize: '18px', maxWidth: '400px', lineHeight: '1.6' }}>
-        Decoding the Human Mind and Biological Immortality.
-      </p>
+// --- 3. UPDATED COMMUNITY & FORUM (Using sectionPadding) ---
+const Community = () => (
+  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={sectionPadding}>
+    <h1 style={glowHeader}>RESEARCH <span style={{ color: 'cyan' }}>NETWORK</span></h1>
+    {/* Grid setup for responsiveness */}
+    <div style={{ 
+      display: 'grid', 
+      gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+      gap: '40px', 
+      width: '100%', 
+      maxWidth: '1200px' 
+    }}>
+      {['DR. ALISHBA', 'PROF. RAZA'].map((name, i) => (
+        <motion.div 
+          key={i} 
+          whileHover={{ y: -10, borderColor: 'cyan' }}
+          style={{ 
+            background: 'rgba(255,255,255,0.02)', padding: '50px 30px', 
+            borderRadius: '40px', border: '1px solid rgba(255,255,255,0.1)', 
+            textAlign: 'center', backdropFilter: 'blur(20px)' 
+          }}
+        >
+          <div style={{ width: '70px', height: '70px', borderRadius: '50%', background: 'cyan', margin: '0 auto 25px', boxShadow: '0 0 20px cyan' }} />
+          <h3 style={{ letterSpacing: '2px' }}>{name}</h3>
+          <button style={{ marginTop: '30px', width: '100%', padding: '12px', borderRadius: '15px', border: '1px solid cyan', color: 'cyan', cursor: 'pointer', fontWeight: 'bold' }}>VIEW PROFILE</button>
+        </motion.div>
+      ))}
     </div>
-
-    {/* Right Side 3D Globe - Shifted using absolute positioning and right offset */}
-    <div style={{ position: 'absolute', right: '-10%', width: '75%', height: '100%', zIndex: 1 }}>
-      <Canvas>
-        <PerspectiveCamera makeDefault position={[0, 0, 9]} />
-        <Stars count={3000} factor={4} fade />
-        <Suspense fallback={null}>
-          <GlobeScene setSelected={setSelected} />
-        </Suspense>
-        <OrbitControls enableZoom={false} enablePan={false} />
-      </Canvas>
-    </div>
-  </div>
+  </motion.div>
 );
-
 // --- 4. Community & Forum Pages (Keeping Spacing Consistent) ---
 const Community = () => (
   <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ paddingTop: '220px', paddingLeft: '8%', paddingRight: '8%', color: 'white' }}>
